@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Dragon Game</title>
+        <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.4.1/semantic.min.css">
+        <style>
+            body{
+                background: #000428;  /* fallback for old browsers */
+                background: -webkit-linear-gradient(to right, #004e92, #000428);  /* Chrome 10-25, Safari 5.1-6 */
+                background: linear-gradient(to right, #004e92, #000428); /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
+
+            }
+            .elements{
+                width:100%;
+                margin-top:50px;
+                margin-left:20%;
+                padding-left: 50px;
+                color: azure;
+            }
+        </style>
+    </head>
+    <body>
+        <canvas width="700" height="320" style="margin-top: 30px; display: block;margin: auto" id="mycanvas">
+
+        </canvas>
+        <div class="ui container ">
+            <div class="elements">
+                <h1>Google's Dino Game by Subhadeep</h1> 
+                <button class="ui inverted button" id="reload">Play Again</button>  
+                <button class="ui inverted button" id="pause">Pause/Play</button>  
+                <button class="ui inverted button" id="earth">Earth Gravity</button>
+                <button class="ui inverted button" id="moon">Moon Gravity</button>
+                <h3>To view code Follow me on :</h3>
+                <button class="ui secondary black button" >
+                    <i class="github icon"></i>
+                    GitHub
+                </button>
+            </div>
+
+        </div>
+
+        <script type="text/javascript">
+            var fps=45;
+            var velocity=-10;
+            var width=700;
+            var height=320;
+            var canvas=document.getElementById("mycanvas");
+            var ctx= canvas.getContext("2d");
+            var dragonImages=[];
+            var dragonImageUrls=["https://i.imgur.com/dyPMw7K.png","https://i.imgur.com/WwUcIUd.png","https://i.imgur.com/cO9ZZMC.png","https://i.imgur.com/AJUkc9s.png","https://i.imgur.com/6xIWhPr.png"];
+            for(var i=0;i<dragonImageUrls.length;i++){
+                var dragonImage = new Image();
+                dragonImage.src= dragonImageUrls[i];
+                dragonImages.push(dragonImage);
+            }
+            var clouds=[];
+            var cloudImage=new Image();
+            cloudImage.src="https://i.imgur.com/H84RIEb.png";
+
+            function getCloud(){
+                var cloud ={};
+                cloud.images=[cloudImage];
+                cloud.width=50;
+                cloud.height=30;
+                cloud.x=width;
+                cloud.y=30+Math.random()*75;
+                cloud.isActive=true;
+                cloud.speedX= -4-(Math.random()*4);
+                cloud.speedY=0;
+                cloud.move=function(){
+                    this.x=this.x+this.speedX;
+                    if(this.x<-100){
+                        this.isActive=false;
+                    }
+                }
+                return cloud;
+            }
+
+            var landImage = new Image();
+            landImage.src="https://i.imgur.com/gL6wPcx.png";
+            var land={};
+            land.width=1200;
+            land.height=12;
+            land.images=[landImage];
+            land.x=land.width/2;
+            land.y=height-13;
+            land.speedX= velocity;
+            land.speedY=0;
+            land.repeatX=1;
+            land.move = function(){
+                this.x = this.x + this.speedX;
+                console.log(this.x);
+                if( this.x < -this.width/2 ){
+                    this.x += this.width ;
+                }
+            }
+
+            var dragon ={};
+            dragon.images=dragonImages;
+            dragon.x=100;
+            dragon.y=280;
+            dragon.width=50;
+            dragon.height=50;
+            dragon.speedX = 0;
+            dragon.speedY=0;
+            var counter=0;
+            var gravity=2.09;
+            dragon.move= function(){
+                this.speedY=this.speedY + gravity;
+                this.y=this.y + this.speedY;
+                if(this.y>280){
+                    this.y=280;
+                    this.speedY=0;
+                }
+            };
+            function drawObject(object){
+                //                ctx.drawImage(object.images[counter%object.images.length],object.x,object.y,object.width,object.height);
+                var currentImageIndex=counter%object.images.length;
+                var currentImage=object.images[currentImageIndex];
+                try{
+                    ctx.drawImage(currentImage,object.x-(object.width/2),object.y-(object.height/2),object.width,object.height);
+                } catch(er){}
+                if(1===object.repeatX){
+                    ctx.drawImage(currentImage,object.width + object.x-(object.width/2),object.y-(object.height/2),object.width,object.height);
+                }
+
+            }
+            var hurdles = [];
+            var hurdleImage = new Image();
+            hurdleImage.src = "https://i.imgur.com/9pEv72P.png";
+
+            var score = 0;
+            function getHurdle(){
+
+                var hurdle = {};
+                hurdle.images = [hurdleImage] ;
+                hurdle.width = 30;
+                hurdle.height = 70;
+                hurdle.x=width;
+                hurdle.y=height - hurdle.height/2 - 15+10;
+                hurdle.isActive = true; 
+                hurdle.speedX = velocity;
+                hurdle.speedY = 0;
+
+                hurdle.move = function(){
+                    this.x = this.x + this.speedX;
+                    if(this.x < -100 ){
+                        this.isActive = false;
+                    }
+                }
+
+                return hurdle;		
+            }
+
+            function check(){
+                for(var i = 0;i<hurdles.length;i++)
+                    if (dragon.x == hurdles[i].x && (dragon.y>=(-1*(hurdles[i].height-hurdles[i].y))))
+                    {
+                        t=2;
+                        clearInterval(intervalId);
+                    }
+            }
+
+
+            var score=0;
+            function update(){
+                check();
+                counter++;
+                score++;
+                if(counter%30==0){
+                    var cloud=getCloud();
+                    clouds.push(cloud);
+                    velocity-=1;
+
+                }
+
+                ctx.fillStyle="#0f76f5";
+                ctx.fillRect(0,0,width,height-13);
+                ctx.fillStyle="#e6e219";
+                ctx.fillRect(0,height-13,width,height);
+                ctx.fillStyle = "#000000";
+                ctx.font = "30px Helvetica";
+                ctx.fillText("Score: " + parseInt(score/10) , width-180, 50);
+                ctx.fillText("Gravity: " + parseInt(gravity*5)+" units" , 10, 50);
+                if(t==2){
+                    ctx.fillStyle = "#ff0000";
+                    ctx.font = "40px Helvetica";
+                    ctx.fillText("Game Over !",width/2 -100, height/2);
+                }
+                dragon.move();
+                drawObject(dragon);
+                land.move();
+                drawObject(land);
+                var cloudsFinal=[];
+                for(var i=0;i<clouds.length;i++)
+                {
+                    var cloud=clouds[i];
+                    cloud.move();
+                    drawObject(cloud);
+                    if(cloud.isActive==true){
+                        cloudsFinal.push(cloud);
+                    }
+                }
+                clouds= cloudsFinal;
+                if(counter%80==0){
+                    // Create new hurdle and store it in array named hurdles
+                    var hurdle = getHurdle();
+                    hurdles.push(hurdle);
+                } 
+                var hurdlesFinal = [];
+                for(var i = 0; i < hurdles.length ; i++){
+                    var hurdle = hurdles[i];
+
+                    hurdle.move();
+                    drawObject(hurdle);
+
+                    if( hurdle.isActive == true){
+                        hurdlesFinal.push(hurdle);
+                    }
+                }
+                hurdles = hurdlesFinal;
+            }
+            var audio=new Audio('https://freesound.org/data/previews/173/173326_2370190-lq.mp3');
+            function playJumpAudio(){
+                audio.play();
+            }
+            var isMusicPlaying = false;
+            document.addEventListener("keydown",function(event){
+                if(event.keyCode==32){
+                    console.log("Presses SpaceBar");
+                    if(dragon.y==280){
+                        playJumpAudio();
+                        dragon.speedY=-20;
+                    }
+                }
+                if(!isMusicPlaying){
+                    isMusicPlaying=true;
+
+                    var audio = new Audio("https://www.mboxdrive.com/song.mp3");
+                    audio.play();
+                }
+            });
+            document.addEventListener("touchstart",function(event){
+
+                console.log("Presses TOUCH");
+                if(dragon.y==280){
+                    playJumpAudio();
+                    dragon.speedY=-20;
+                }
+
+            });
+            var t=0;
+            document.getElementById("reload").addEventListener("click",function(e){
+                location.reload();
+            });
+            document.getElementById("earth").addEventListener("click",function(e){
+                gravity=2.09;
+            });
+            document.getElementById("moon").addEventListener("click",function(e){
+                gravity=1.0;
+            });
+            document.getElementById("pause").addEventListener("click",function(e){
+                if(t==0)
+                {
+                    t=1;
+                    intervalId=clearInterval(intervalId);
+                }
+                else if(t==2){
+                    t=0;
+                    location.reload();
+                }
+                else{
+                    t=0;
+                    intervalId=setInterval(update,fps);
+                }
+            });
+            intervalId=setInterval(update,fps);
+        </script>
+        <script src="https://code.jquery.com/jquery-3.5.1.slim.js" integrity="sha256-DrT5NfxfbHvMHux31Lkhxg42LY6of8TaYyK50jnxRnM=" crossorigin="anonymous">
+        </script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.4.1/semantic.min.js"></script>
+    </body>
+</html>
